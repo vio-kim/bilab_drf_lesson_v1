@@ -1,0 +1,2 @@
+from .phones_company_choices import PhoneCompanyChoice
+from .phones_color_choices import PhoneColorChoice
