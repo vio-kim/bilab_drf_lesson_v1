@@ -3,7 +3,7 @@ from django.contrib.auth.base_user import BaseUserManager
 
 class CustomUserManager(BaseUserManager):
 
-    def _create_user(self, phone, password, is_staff, is_active, is_superuser, **extra_fields):
+    def _create_user(self, phone, password, **extra_fields):
 
         if not phone or phone is None:
             raise ValueError('User MUST have Phone number!')
