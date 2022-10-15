@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.core.exceptions import ValidationError
 
 from utils.models import AbstractUUID, AbstractTimeTracker
+from utils.const import CustomUserRoleChoice
 from accounts.managers import CustomUserManager
 
 
@@ -32,6 +34,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractUUID, AbstractTimeT
         unique=True,
         verbose_name='IIN'
     )
+    role = models.CharField(
+        max_length=100,
+        choices=CustomUserRoleChoice.choices,
+        default=CustomUserRoleChoice.DEFAULT.value,
+        verbose_name='Role'
+    )
 
     is_active = models.BooleanField(
         default=True,
@@ -42,16 +50,33 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractUUID, AbstractTimeT
         verbose_name='is_staff'
     )
     is_superuser = models.BooleanField(
-        default=True,
+        default=False,
         verbose_name='is_superuser'
     )
 
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['email', 'iin']
 
-    object = CustomUserManager()
+    objects = CustomUserManager()
 
     class Meta:
         verbose_name = 'User'
         verbose_name_plural = 'Users'
         ordering = ['-updated_at', '-created_at']
+
+    # этот метод, для праверки валидности при создании через админку
+    # def clean(self):
+        # if (self.is_staff and (self.role != CustomUserRoleChoice.ADMIN.value or self.role)) or \
+        #         (self.role == CustomUserRoleChoice.ADMIN.value and not self.is_staff):
+        #     raise ValidationError('"role" or "is_staff" value is wrong!')
+
+    # этот метод, для праверки валидности при создании юзера
+    def save(self, *args, **kwargs):
+        # if (self.is_staff and self.role != CustomUserRoleChoice.ADMIN.value) or \
+        #         (self.role == CustomUserRoleChoice.ADMIN.value and not self.is_staff):
+        #     raise ValidationError('"role" or "is_staff" value is wrong!')
+
+        if self.is_superuser:
+            self.role = CustomUserRoleChoice.SUPER_ADMIN.value
+
+        return super(CustomUser, self).save(*args, **kwargs)

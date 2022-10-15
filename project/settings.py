@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 
     # PIP apps
     'rest_framework',
+    'django_filters',
 
     # OWN apps
     'utils',
@@ -135,3 +136,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ],
+    "USER_DETAILS_SERIALIZER": "accounts.serializers.CustomUserAllFieldsSerializer",
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+}

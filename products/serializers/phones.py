@@ -13,8 +13,8 @@ class PhoneAllSerializer(serializers.ModelSerializer):
 
 
 class PhoneListSerializer(serializers.ModelSerializer):
-    created_at = serializers.DateTimeField(format='%d-%m-%Y %H:%M')
-    updated_at = serializers.DateTimeField(format='%d-%m-%Y %H:%M')
+    created_at = serializers.DateTimeField(format='%d-%m-%Y %H-%M')
+    updated_at = serializers.DateTimeField(format='%d-%m-%Y %H-%M')
     memory = serializers.SerializerMethodField('get_memory')
 
     class Meta:

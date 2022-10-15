@@ -1,9 +1,13 @@
 from rest_framework import viewsets, mixins, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from django_filters import rest_framework as filters
 
 from products.models import Phone
 from products.serializers import PhoneAllSerializer, PhoneListSerializer, PhoneRetrieveSerializer, PhoneCreateSerializer
+from products.permissions import IsAdminOrReadOnly
+from products.filters import PhoneFilterSet
 
 
 class PhoneViewSet(viewsets.GenericViewSet,
@@ -14,7 +18,18 @@ class PhoneViewSet(viewsets.GenericViewSet,
                    mixins.DestroyModelMixin):
     queryset = Phone.objects.all()
     serializer_class = PhoneAllSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    filter_backends = (filters.DjangoFilterBackend, )
+    filterset_class = PhoneFilterSet
+
+    def get_permissions(self):
+        permission_classes = self.permission_classes
+
+        if self.action == 'update' or self.action == 'partial_update' or self.action == 'destroy':
+            permission_classes.append(IsAdminOrReadOnly)
+
+        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         serializer_class = self.serializer_class
@@ -28,7 +43,7 @@ class PhoneViewSet(viewsets.GenericViewSet,
 
         return serializer_class
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # POST
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
