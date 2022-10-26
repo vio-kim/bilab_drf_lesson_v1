@@ -1,5 +1,6 @@
 from .user import (
     CustomUserAllFieldsSerializer,
     CustomUserCreateSerializer,
-    CustomUserListSerializer
+    CustomUserListSerializer,
+    CustomUserLoginSerializer
 )

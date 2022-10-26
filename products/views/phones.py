@@ -1,15 +1,21 @@
 from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from django_filters import rest_framework as filters
 
-from products.models import Phone
-from products.serializers import PhoneAllSerializer, PhoneListSerializer, PhoneRetrieveSerializer, PhoneCreateSerializer
+from products.models import Phone, Memory
+from products.serializers import (
+    PhoneAllSerializer,
+    PhoneListSerializer,
+    PhoneRetrieveSerializer,
+    PhoneCreateSerializer,
+    MemoryAllFieldsSerializer,
+)
 from products.permissions import IsAdminOrReadOnly
 from products.filters import PhoneFilterSet
-from products.tasks import adding_task
-
+from products.tasks import send_email_celery
 
 
 class PhoneViewSet(viewsets.GenericViewSet,
@@ -45,25 +51,12 @@ class PhoneViewSet(viewsets.GenericViewSet,
 
         return serializer_class
 
-    def list(self, request, *args, **kwargs):
-        # FOR CELERY CHECK
-        adding_task.delay(56, 55)
-
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
     def create(self, request, *args, **kwargs):  # POST
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(data={}, status=status.HTTP_201_CREATED)
+        instance = serializer.save()
+        send_email_celery.delay()
+        return Response(data=PhoneListSerializer(instance).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):  # PUT
         partial = kwargs.pop('partial', False)
@@ -78,3 +71,19 @@ class PhoneViewSet(viewsets.GenericViewSet,
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='get_all_memorise')
+    def get_all_memorise(self, request, *args, **kwargs):
+        queryset = Memory.objects.all()
+        serializer = MemoryAllFieldsSerializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True , methods=['get'], url_path='get_one_memorise')
+    def get_one_memorise(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        instance = Memory.objects.filter(pk=pk).first()
+        if instance is not None:
+            serializer = MemoryAllFieldsSerializer(instance).data
+        else:
+            serializer = {'ERROR': 'Memory by given uuid not found!'}
+        return Response(data=serializer, status=status.HTTP_200_OK)

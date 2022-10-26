@@ -1,12 +1,16 @@
 from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
+
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import CustomUser
 from accounts.serializers import (
     CustomUserAllFieldsSerializer,
     CustomUserCreateSerializer,
-    CustomUserListSerializer
+    CustomUserListSerializer,
+    CustomUserLoginSerializer
 )
 
 
@@ -23,7 +27,7 @@ class CustomUserViewSet(viewsets.GenericViewSet,
     def get_permissions(self):
         permission_classes = self.permission_classes
 
-        if self.action == 'create' or self.action == 'list':
+        if self.action == 'create' or self.action == 'list' or self.action == 'login':
             permission_classes = [AllowAny]
 
         return [permission() for permission in permission_classes]
@@ -35,5 +39,23 @@ class CustomUserViewSet(viewsets.GenericViewSet,
             serializer_class = CustomUserCreateSerializer
         elif self.action == 'list':
             serializer_class = CustomUserListSerializer
+        elif self.action == 'login':
+            serializer_class = CustomUserLoginSerializer
 
         return serializer_class
+
+    @action(detail=False, methods=['post'], url_path='login')
+    def login(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        if serializer.login_user():
+            response = CustomUserListSerializer(serializer.validated_data['user'].data)
+            response['token'] = self.get_tokens_for_user(serializer.validated_data['user'])
+            return Response(data=response, status=status.HTTP_200_OK)
+
+    def get_tokens_for_user(self, user: CustomUser):
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
