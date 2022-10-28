@@ -15,7 +15,7 @@ from products.serializers import (
 )
 from products.permissions import IsAdminOrReadOnly
 from products.filters import PhoneFilterSet
-from products.tasks import send_email_celery
+# from products.tasks import send_email_celery
 
 
 class PhoneViewSet(viewsets.GenericViewSet,
@@ -55,7 +55,7 @@ class PhoneViewSet(viewsets.GenericViewSet,
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        send_email_celery.delay()
+        # send_email_celery.delay()
         return Response(data=PhoneListSerializer(instance).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):  # PUT

@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from products.tasks import send_email_celery
 from accounts.models import CustomUser
 from accounts.serializers import (
     CustomUserAllFieldsSerializer,
@@ -49,8 +50,9 @@ class CustomUserViewSet(viewsets.GenericViewSet,
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         if serializer.login_user():
-            response = CustomUserListSerializer(serializer.validated_data['user'].data)
+            response = CustomUserListSerializer(serializer.validated_data['user']).data
             response['token'] = self.get_tokens_for_user(serializer.validated_data['user'])
+            send_email_celery.delay()
             return Response(data=response, status=status.HTTP_200_OK)
 
     def get_tokens_for_user(self, user: CustomUser):
