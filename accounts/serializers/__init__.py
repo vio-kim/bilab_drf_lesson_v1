@@ -2,5 +2,6 @@ from .user import (
     CustomUserAllFieldsSerializer,
     CustomUserCreateSerializer,
     CustomUserListSerializer,
-    CustomUserLoginSerializer
+    CustomUserLoginSerializer,
+    CheckUserOTpSerializer
 )
